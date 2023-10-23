@@ -1,5 +1,7 @@
 # tectonic_assets
-- cli for flutter assets management
+- CLI tool for flutter assets management
+
+  [![License MIT](https://img.shields.io/badge/license-MIT-lightgrey.svg?style=flat)](https://github.com/NjiruClinton/tectonic_assets/blob/main/LICENSE)
 
 ## installation
 ```bash
@@ -37,7 +39,7 @@ outputs fonts, images and other assets from a flutter project
 - [x] pubspec.yaml
 - [x] assets/
 
-**LICENCE: MIT**
+
 
 
 > project still under development

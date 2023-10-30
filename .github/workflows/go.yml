@@ -26,3 +26,37 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+# on pushing, run go build and the generated exe file will be in the release
+# on:
+#   push:
+#     branches:
+#       - main
+#   pull_request:
+#     branches:
+#       - main
+#   release:
+#     types:
+#       - created
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Set up Go 1.16
+#         uses: actions/setup-go@v2
+#         with:
+#           go-version: 1.16
+#       - name: Build
+#         run: go build -o myapp
+#       - name: Test
+#         run: go test ./...
+#       - name: Release
+#         uses: softprops/action-gh-release@v1
+#         with:
+#           files: |
+#             myapp
+#           tag_name: ${{ github.ref }}
+#           body: |
+#             release body
+#           draft: false
+#           prerelease: false

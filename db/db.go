@@ -19,7 +19,7 @@ func goDotEnvVariable(key string) string {
 }
 
 func Pgdb() {
-	err := godotenv.Load(".env")
+	err := godotenv.Load("/etc/secrets/.env")
 
 	if err != nil {
 		log.Fatalf("Error loading .env file")

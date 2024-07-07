@@ -26,7 +26,7 @@ func Pgdb() {
 	}
 
 	connectionStr := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", goDotEnvVariable("USER"), goDotEnvVariable("PASSWORD"), goDotEnvVariable("DBNAME"), goDotEnvVariable("SSL_MODE"))
-	//fmt.Println(connectionStr)
+	fmt.Println(connectionStr)
 
 	conn, err := sql.Open("postgres", connectionStr)
 	if err != nil {

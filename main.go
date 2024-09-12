@@ -44,7 +44,7 @@ func customRenderer() {
 		return c.Render(200, "index.html", count)
 	})
 
-	e.Logger.Fatal(e.Start(":42069"))
+	e.Logger.Fatal(e.Start(":8080"))
 }
 
 func main() {

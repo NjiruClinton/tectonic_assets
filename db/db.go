@@ -19,15 +19,14 @@ func goDotEnvVariable(key string) string {
 }
 
 func Pgdb() {
-	err := godotenv.Load("/etc/secrets/.env")
+	err := godotenv.Load(".env") // "/etc/secrets/.env"
 
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
 
 	connectionStr := goDotEnvVariable("DB_CONNECTION_STRING")
-	//fmt.Sprintf("user=%s password=%s dbname=%s sslmode=%s", goDotEnvVariable("USER"), goDotEnvVariable("PASSWORD"), goDotEnvVariable("DBNAME"), goDotEnvVariable("SSL_MODE"))
-	fmt.Println(connectionStr)
+	//fmt.Println(connectionStr)
 
 	conn, err := sql.Open("postgres", connectionStr)
 	if err != nil {

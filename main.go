@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NjiruClinton/tectonic_assets/api/routes"
 	"github.com/NjiruClinton/tectonic_assets/db"
+	"github.com/NjiruClinton/tectonic_assets/profiler"
 	"github.com/NjiruClinton/tectonic_assets/tests"
 	"github.com/NjiruClinton/tectonic_assets/timetool"
 	"github.com/labstack/echo/v4"
@@ -11,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	"text/template"
+	"time"
 )
 
 type Template struct {
@@ -50,22 +52,17 @@ func customRenderer() {
 func main() {
 	mux := routes.SetupRoutes()
 	http.Handle("/", mux)
-
 	timeTool := timetool.NewTime()
 	timeTool.Start()
 
-	// workload here
-
-	db.Pgdb()
-	fmt.Println("database connected... ")
-
-	//port := 8080
-	//fmt.Printf("Server running at http://localhost:%d\n", port)
-	//err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
-	//if err != nil {
-	//	fmt.Println("Error starting server:", err)
-	//}
-
+	dbConn, err := db.Pgdb()
+	if err != nil {
+		fmt.Println("Error connecting to the database:", err)
+		return
+	}
+	defer dbConn.Close()
+	prof := profiler.NewProfiler("example_process", 1, dbConn, 5*time.Second)
+	go prof.Start()
 	customRenderer()
 
 	tests.TestCPU()

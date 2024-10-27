@@ -10,6 +10,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var conn *sql.DB
+
 func goDotEnvVariable(key string) string {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -18,33 +20,27 @@ func goDotEnvVariable(key string) string {
 	return os.Getenv(key)
 }
 
-func Pgdb() {
+func Pgdb() (*sql.DB, error) {
 	err := godotenv.Load(".env") // "/etc/secrets/.env"
-
 	if err != nil {
 		log.Fatalf("Error loading .env file")
 	}
-
 	connectionStr := goDotEnvVariable("DB_CONNECTION_STRING")
-	//fmt.Println(connectionStr)
-
 	conn, err := sql.Open("postgres", connectionStr)
 	if err != nil {
 		panic(err)
 	}
-
-	rows, err := conn.Query("SELECT version();")
+	err = conn.Ping()
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Database connected...")
+	return conn, nil
+}
 
-	for rows.Next() {
-		var version string
-		rows.Scan(&version)
-		fmt.Println(version)
+func ExecuteQuery(db *sql.DB, query string, args ...interface{}) (sql.Result, error) {
+	if db == nil {
+		return nil, fmt.Errorf("database connection not initialized")
 	}
-
-	rows.Close()
-
-	conn.Close()
+	return db.Exec(query, args...)
 }

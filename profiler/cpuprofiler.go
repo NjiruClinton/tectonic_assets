@@ -4,8 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/NjiruClinton/tectonic_assets/db"
-	_ "github.com/lib/pq"
-	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/process"
 	"time"
 )
 
@@ -14,24 +13,30 @@ type Profiler struct {
 	processID int
 	db        *sql.DB
 	interval  time.Duration
+	process   *process.Process
 }
 
-func NewProfiler(name string, processID int, db *sql.DB, interval time.Duration) *Profiler {
+func NewProfiler(name string, processID int, db *sql.DB, interval time.Duration) (*Profiler, error) {
+	p, err := process.NewProcess(int32(processID))
+	if err != nil {
+		return nil, fmt.Errorf("error attaching to process: %v", err)
+	}
 	return &Profiler{
 		name:      name,
 		processID: processID,
 		db:        db,
 		interval:  interval,
-	}
+		process:   p,
+	}, nil
 }
 
 func (p *Profiler) collectCPUUsage() (float64, error) {
-	fmt.Println("Collecting CPU usage...")
-	percentages, err := cpu.Percent(time.Second, false)
+	fmt.Println("Collecting CPU usage for process ID:", p.processID)
+	percentages, err := p.process.CPUPercent()
 	if err != nil {
 		return 0, err
 	}
-	return percentages[0], nil
+	return percentages, nil
 }
 
 func (p *Profiler) storeCPUUsage(usage float64) error {

@@ -61,7 +61,9 @@ func main() {
 		return
 	}
 	defer dbConn.Close()
-	prof := profiler.NewProfiler("example_process", 1, dbConn, 5*time.Second)
+	pid := profiler.AttachProcess()
+	prof, err := profiler.NewProfiler("tectonic_assets", int(pid.Pid), dbConn, 5*time.Second)
+
 	go prof.Start()
 	customRenderer()
 

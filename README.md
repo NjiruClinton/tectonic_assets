@@ -1,6 +1,15 @@
 # tectonic_assets:
 *building a web-based dashboard for go profiling, real-time monitoring and analysis of CPU usage, Heap / Memory, Threads, Mutexes, Goroutines and Blocks across multiple applications or services.*
 
+Run migrations to postgres
+```bash
+goose -dir ./migrations postgres "your_connection_string" up
+```
+Rollback Migration
+```bash
+goose -dir ./migrations postgres "your_connection_string" down
+```
+
 ### Pseudocode Plan
 
 1. **Define Data Collection Agent**:

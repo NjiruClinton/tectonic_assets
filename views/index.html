@@ -1,12 +1,19 @@
-
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>tectonic_assets</title>
+    <title>CPU Usage Graph</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Blocks</h1>
-    <p>Count {{ .Count }}</p>
+<body class="flex flex-col items-center justify-center min-h-screen">
+    <h1 class="text-2xl font-bold mb-4">CPU Usage Graph</h1>
+    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4" hx-get="/cpu_usage" hx-trigger="click" hx-target="#cpuUsageChart" hx-swap="innerHTML">Load CPU Usage</button>
+    <div id="loader" class="hidden">Loading...</div>
+    <canvas id="cpuUsageChart" width="400" height="200" class="border border-gray-300 rounded shadow-lg"></canvas>
+    <script src="index.js"></script>
 </body>
 </html>

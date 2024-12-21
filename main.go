@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/NjiruClinton/tectonic_assets/api/routes"
 	"github.com/NjiruClinton/tectonic_assets/db"
+	"github.com/NjiruClinton/tectonic_assets/handlers"
 	"github.com/NjiruClinton/tectonic_assets/profiler"
 	"github.com/NjiruClinton/tectonic_assets/tests"
 	"github.com/NjiruClinton/tectonic_assets/timetool"
@@ -41,10 +42,12 @@ func customRenderer() {
 	e.Renderer = newTemplate()
 	e.Use(middleware.Logger())
 
+	e.Static("/", "views")
 	e.GET("/", func(c echo.Context) error {
 		count.Count++
 		return c.Render(200, "index.html", count)
 	})
+	e.GET("/cpu_usage", handlers.GetCPUUsage)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

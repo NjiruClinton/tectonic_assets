@@ -6,8 +6,8 @@ import (
 	"net/http"
 )
 
-func GetCPUUsage(c echo.Context) error {
-	query := "SELECT process_name, usage, timestamp FROM cpu_usage WHERE timestamp >= NOW() - INTERVAL '5 hours' ORDER BY timestamp"
+func GetMemoryUsage(c echo.Context) error {
+	query := "SELECT process_name, usage, timestamp FROM memory_usage ORDER BY timestamp"
 	dbConn, err := db.Pgdb()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -17,22 +17,21 @@ func GetCPUUsage(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
 	defer rows.Close()
-	var cpuUsages []map[string]interface{}
+	var memoryUsages []map[string]interface{}
 	for rows.Next() {
 		var processName string
-		var usage float64
+		var usage float32
 		var timestamp string
 		err = rows.Scan(&processName, &usage, &timestamp)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		}
-		cpuUsage := map[string]interface{}{
+		memoryUsage := map[string]interface{}{
 			"process_name": processName,
 			"usage":        usage,
 			"timestamp":    timestamp,
 		}
-		cpuUsages = append(cpuUsages, cpuUsage)
+		memoryUsages = append(memoryUsages, memoryUsage)
 	}
-	return c.JSON(http.StatusOK, cpuUsages)
-
+	return c.JSON(http.StatusOK, memoryUsages)
 }

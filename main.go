@@ -47,7 +47,7 @@ func customRenderer() {
 		count.Count++
 		return c.Render(200, "index.html", count)
 	})
-	e.GET("/cpu_usage", handlers.GetCPUUsage)
+	e.GET("/cpu_usage", handlers.GetMemoryUsage)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }
@@ -65,9 +65,18 @@ func main() {
 	}
 	defer dbConn.Close()
 	pid := profiler.AttachProcess()
-	prof, err := profiler.NewProfiler("tectonic_assets", int(pid.Pid), dbConn, 5*time.Second)
+	//prof, err := profiler.NewProfiler("tectonic_assets", int(pid.Pid), dbConn, 5*time.Second)
+	//
+	//go prof.Start()
 
-	go prof.Start()
+	// Memory Profiler
+	memProf, err := profiler.NewMemoryProfiler("tectonic_assets", int(pid.Pid), dbConn, 5*time.Second)
+	if err != nil {
+		fmt.Println("Error creating memory profiler:", err)
+		return
+	}
+	go memProf.Start()
+
 	customRenderer()
 
 	tests.TestCPU()

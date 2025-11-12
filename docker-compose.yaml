@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: tectonic_postgres
+    environment:
+      POSTGRES_DB: tectonic_assets
+      POSTGRES_USER: clinton
+      POSTGRES_PASSWORD: Clint1235
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tectonic_assets_app
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=clinton
+      - DB_PASSWORD=Clint1235
+      - DB_NAME=tectonic_assets
+    depends_on:
+      - postgres
+    networks:
+      - app_network
+
+volumes:
+  postgres_data:
+
+networks:
+  app_network:
+    driver: bridge

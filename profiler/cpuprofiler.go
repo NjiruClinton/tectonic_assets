@@ -9,24 +9,26 @@ import (
 )
 
 type Profiler struct {
-	name      string
-	processID int
-	db        *sql.DB
-	interval  time.Duration
-	process   *process.Process
+	name        string
+	processID   int
+	processPath string
+	db          *sql.DB
+	interval    time.Duration
+	process     *process.Process
 }
 
-func NewProfiler(name string, processID int, db *sql.DB, interval time.Duration) (*Profiler, error) {
+func NewProfiler(name string, processID int, processPath string, db *sql.DB, interval time.Duration) (*Profiler, error) {
 	p, err := process.NewProcess(int32(processID))
 	if err != nil {
 		return nil, fmt.Errorf("error attaching to process: %v", err)
 	}
 	return &Profiler{
-		name:      name,
-		processID: processID,
-		db:        db,
-		interval:  interval,
-		process:   p,
+		name:        name,
+		processID:   processID,
+		processPath: processPath,
+		db:          db,
+		interval:    interval,
+		process:     p,
 	}, nil
 }
 
@@ -48,9 +50,20 @@ func (p *Profiler) storeCPUUsage(usage float64) error {
 
 func (p *Profiler) Start() {
 	for {
+		if !IsProcessRunning(p.process) {
+			fmt.Printf("CPU Profiler: Process %s (PID: %d) is not running or terminated\n", p.name, p.processID)
+			p.process = WaitAndReattachProcess(p.processPath, 2*time.Second)
+			p.processID = int(p.process.Pid)
+			fmt.Printf("CPU Profiler: Successfully reattached to process %s (new PID: %d)\n", p.name, p.processID)
+		}
+
 		usage, err := p.collectCPUUsage()
 		if err != nil {
-			fmt.Println("Error collecting CPU usage:", err)
+			fmt.Printf("Error collecting CPU usage for %s: %v\n", p.name, err)
+			if !IsProcessRunning(p.process) {
+				continue // Will reattach on next
+			}
+			time.Sleep(p.interval)
 			continue
 		}
 		err = p.storeCPUUsage(usage)

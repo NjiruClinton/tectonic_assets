@@ -65,12 +65,19 @@ func main() {
 	}
 	defer dbConn.Close()
 	pid := profiler.AttachProcess()
-	//prof, err := profiler.NewProfiler("tectonic_assets", int(pid.Pid), dbConn, 5*time.Second)
+	if pid == nil {
+		fmt.Println("Failed to attach to process")
+		return
+	}
+
+	processPath := profiler.GetProcessPath()
+
+	//prof, err := profiler.NewProfiler("tectonic_assets", int(pid.Pid), processPath, dbConn, 5*time.Second)
 	//
 	//go prof.Start()
 
 	// Memory Profiler
-	memProf, err := profiler.NewMemoryProfiler("tectonic_assets", int(pid.Pid), dbConn, 5*time.Second)
+	memProf, err := profiler.NewMemoryProfiler("tectonic_assets", int(pid.Pid), processPath, dbConn, 5*time.Second)
 	if err != nil {
 		fmt.Println("Error creating memory profiler:", err)
 		return

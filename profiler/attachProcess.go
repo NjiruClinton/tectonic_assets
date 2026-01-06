@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/shirou/gopsutil/process"
 	_ "go.uber.org/zap/zapcore"
+	"time"
 )
 
 func AttachProcess() *process.Process {
-	// process path
-	processPath := "/Users/admin/Desktop/stuff/clinton/toyl/tmp/main"
+	processPath := GetProcessPath()
 	p, err := ReattachProcessByName(processPath)
 	if err != nil {
 		fmt.Println("Error attaching to process:", err)
@@ -16,6 +16,10 @@ func AttachProcess() *process.Process {
 	}
 	fmt.Println("Successfully attached to process with PID:", p.Pid)
 	return p
+}
+
+func GetProcessPath() string {
+	return "/Users/admin/Desktop/stuff/clinton/toyl/tmp/main"
 }
 
 // logic for re attaching process after it has restarted
@@ -39,4 +43,30 @@ func ReattachProcessByName(processPath string) (*process.Process, error) {
 	}
 
 	return nil, fmt.Errorf("process with path %s not found", processPath)
+}
+
+func IsProcessRunning(p *process.Process) bool {
+	if p == nil {
+		return false
+	}
+	running, err := p.IsRunning()
+	if err != nil {
+		return false
+	}
+	return running
+}
+
+func WaitAndReattachProcess(processPath string, checkInterval time.Duration) *process.Process {
+	fmt.Printf("Process not found or terminated. Waiting for process at %s to restart...\n", processPath)
+
+	for {
+		p, err := ReattachProcessByName(processPath)
+		if err == nil {
+			fmt.Printf("Process restarted! Successfully reattached to process with PID: %d\n", p.Pid)
+			return p
+		}
+
+		fmt.Printf("Process still not available, checking again in %v...\n", checkInterval)
+		time.Sleep(checkInterval)
+	}
 }

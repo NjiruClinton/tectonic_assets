@@ -9,24 +9,26 @@ import (
 )
 
 type MemoryProfiler struct {
-	name      string
-	processID int
-	db        *sql.DB
-	interval  time.Duration
-	process   *process.Process
+	name        string
+	processID   int
+	processPath string
+	db          *sql.DB
+	interval    time.Duration
+	process     *process.Process
 }
 
-func NewMemoryProfiler(name string, processID int, db *sql.DB, interval time.Duration) (*MemoryProfiler, error) {
+func NewMemoryProfiler(name string, processID int, processPath string, db *sql.DB, interval time.Duration) (*MemoryProfiler, error) {
 	p, err := process.NewProcess(int32(processID))
 	if err != nil {
 		return nil, fmt.Errorf("error attaching to process: %v", err)
 	}
 	return &MemoryProfiler{
-		name:      name,
-		processID: processID,
-		db:        db,
-		interval:  interval,
-		process:   p,
+		name:        name,
+		processID:   processID,
+		processPath: processPath,
+		db:          db,
+		interval:    interval,
+		process:     p,
 	}, nil
 }
 
@@ -49,9 +51,20 @@ func (p *MemoryProfiler) storeMemoryUsage(usage float32) error {
 
 func (p *MemoryProfiler) Start() {
 	for {
+		if !IsProcessRunning(p.process) {
+			fmt.Printf("Memory Profiler: Process %s (PID: %d) is not running or terminated\n", p.name, p.processID)
+			p.process = WaitAndReattachProcess(p.processPath, 2*time.Second)
+			p.processID = int(p.process.Pid)
+			fmt.Printf("Memory Profiler: Successfully reattached to process %s (new PID: %d)\n", p.name, p.processID)
+		}
+
 		usage, err := p.collectMemoryUsage()
 		if err != nil {
-			fmt.Println("Error collecting memory usage:", err)
+			fmt.Printf("Error collecting memory usage for %s: %v\n", p.name, err)
+			if !IsProcessRunning(p.process) {
+				continue
+			}
+			time.Sleep(p.interval)
 			continue
 		}
 		err = p.storeMemoryUsage(usage)

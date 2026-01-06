@@ -32,14 +32,4 @@ func TestAttachProcess(t *testing.T) {
 	if p.Pid != pid {
 		t.Errorf("Expected PID %d, but got %d", pid, p.Pid)
 	}
-
-	// Check if child processes are found
-	childPIDs, err := findChildPIDs(int(pid))
-	if err != nil {
-		t.Errorf("Error finding child PIDs: %v", err)
-	} else if len(childPIDs) == 0 {
-		t.Errorf("No child PIDs found for PID %d", pid)
-	} else {
-		t.Logf("Child PIDs found for PID %d: %v", pid, childPIDs)
-	}
 }

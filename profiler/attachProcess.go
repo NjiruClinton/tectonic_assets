@@ -14,21 +14,14 @@ import (
 )
 
 func AttachProcess() *process.Process {
-	pid := int32(66470)
-	p, err := process.NewProcess(pid)
+	// process path
+	processPath := "/Users/admin/Desktop/stuff/clinton/toyl/tmp/main"
+	p, err := ReattachProcessByName(processPath)
 	if err != nil {
 		fmt.Println("Error attaching to process:", err)
 		return nil
 	}
-	// child processes
-	childPIDs, err := findChildPIDs(int(pid))
-	if err != nil {
-		fmt.Println("Error finding child PIDs:", err)
-		return nil
-	}
-	fmt.Println("Child PIDs:", childPIDs)
-
-	fmt.Println("Process ID:", p.Pid)
+	fmt.Println("Successfully attached to process with PID:", p.Pid)
 	return p
 }
 
@@ -156,4 +149,27 @@ func findChildPIDs(parentPID int) ([]int, error) {
 	findDescendants(parentPID)
 
 	return childPIDs, nil
+}
+
+// logic for re attaching process after it has restarted
+// it will have a new pid each time it restarts
+func ReattachProcessByName(processPath string) (*process.Process, error) {
+	// process is running at path
+	procs, err := process.Processes()
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving processes: %v", err)
+	}
+
+	for _, p := range procs {
+		println("Checking process PID:", p.Pid)
+		exe, err := p.Exe()
+		if err != nil {
+			continue
+		}
+		if exe == processPath {
+			return p, nil
+		}
+	}
+
+	return nil, fmt.Errorf("process with path %s not found", processPath)
 }

@@ -47,7 +47,12 @@ func customRenderer() {
 		count.Count++
 		return c.Render(200, "index.html", count)
 	})
-	e.GET("/cpu_usage", handlers.GetMemoryUsage)
+	e.GET("/cpu_usage", handlers.GetCPUUsage)
+	e.POST("/cpu_usage", handlers.GetCPUUsage)
+	e.GET("/memory_usage", handlers.GetMemoryUsage)
+	e.POST("/memory_usage", handlers.GetMemoryUsage)
+	e.GET("/cpu_processes", handlers.GetCPUProcesses)
+	e.GET("/memory_processes", handlers.GetMemoryProcesses)
 
 	e.Logger.Fatal(e.Start(":8080"))
 }

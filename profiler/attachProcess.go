@@ -32,6 +32,9 @@ func ReattachProcessByName(processPath string) (*process.Process, error) {
 	}
 
 	for _, p := range procs {
+		if p.Pid < 100 {
+			continue
+		}
 		println("Checking process PID:", p.Pid)
 		exe, err := p.Exe()
 		if err != nil {

@@ -1,19 +1,116 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <title>CPU Usage Graph</title>
+    <title>System Performance Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+    </script>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen">
-    <h1 class="text-2xl font-bold mb-4">CPU Usage Graph</h1>
-    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4" hx-get="/cpu_usage" hx-trigger="click" hx-target="#cpuUsageChart" hx-swap="innerHTML">Load CPU Usage</button>
-    <div id="loader" class="hidden">Loading...</div>
-    <canvas id="cpuUsageChart" width="400" height="200" class="border border-gray-300 rounded shadow-lg"></canvas>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen text-gray-900 dark:text-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<!--                            <button onclick="toggleDarkMode()" class="mb-6 px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100">-->
+<!--                                Toggle Dark Mode-->
+<!--                            </button>-->
+        <!-- CPU Usage Section -->
+        <div class="mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">CPU Usage</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div>
+                        <label for="cpuStartDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date & Time</label>
+                        <input type="datetime-local" id="cpuStartDate" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label for="cpuEndDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date & Time</label>
+                        <input type="datetime-local" id="cpuEndDate" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label for="cpuProcessFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Process Filter</label>
+                        <select id="cpuProcessFilter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-900 dark:text-gray-100">
+                            <option value="">All Processes</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
+                                hx-get="/cpu_usage"
+                                hx-trigger="click"
+                                hx-target="#cpuChartContainer"
+                                hx-vals="js:{start_date: document.getElementById('cpuStartDate').value, end_date: document.getElementById('cpuEndDate').value, process: document.getElementById('cpuProcessFilter').value}"
+                                hx-indicator="#cpuLoader">
+                            Load CPU Data
+                        </button>
+                    </div>
+                </div>
+                <div id="cpuLoader" class="htmx-indicator flex items-center justify-center p-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span class="ml-2 text-gray-600 dark:text-gray-300">Loading CPU data...</span>
+                </div>
+                <div id="cpuChartContainer" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                    <canvas id="cpuChart" width="800" height="400" class="w-full"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Memory Usage</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div>
+                        <label for="memoryStartDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Start Date & Time</label>
+                        <input type="datetime-local" id="memoryStartDate" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label for="memoryEndDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">End Date & Time</label>
+                        <input type="datetime-local" id="memoryEndDate" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-900 dark:text-gray-100">
+                    </div>
+                    <div>
+                        <label for="memoryProcessFilter" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Process Filter</label>
+                        <select id="memoryProcessFilter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 dark:bg-gray-900 dark:text-gray-100">
+                            <option value="">All Processes</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
+                                hx-get="/memory_usage"
+                                hx-trigger="click"
+                                hx-target="#memoryChartContainer"
+                                hx-vals="js:{start_date: document.getElementById('memoryStartDate').value, end_date: document.getElementById('memoryEndDate').value, process: document.getElementById('memoryProcessFilter').value}"
+                                hx-indicator="#memoryLoader">
+                            Load Memory Data
+                        </button>
+                    </div>
+                </div>
+                <div id="memoryLoader" class="htmx-indicator flex items-center justify-center p-4">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                    <span class="ml-2 text-gray-600 dark:text-gray-300">Loading memory data...</span>
+                </div>
+                <div id="memoryChartContainer" class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+                    <canvas id="memoryChart" width="800" height="400" class="w-full"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Process Statistics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Top CPU Processes</h3>
+                    <div id="topCpuProcesses" class="space-y-2">
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Top Memory Processes</h3>
+                    <div id="topMemoryProcesses" class="space-y-2">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="index.js"></script>
 </body>
 </html>

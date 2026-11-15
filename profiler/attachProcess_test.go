@@ -1,44 +1,37 @@
 package profiler
 
 import (
-	"fmt"
+	"os"
 	"testing"
 )
 
 func TestProcessMonitoring(t *testing.T) {
-	processPath := GetProcessPath()
-	if processPath == "" {
-		t.Error("GetProcessPath should return a non-empty string")
+	if os.Getenv("RUN_PROCESS_INTEGRATION_TEST") == "" {
+		t.Skip("set RUN_PROCESS_INTEGRATION_TEST=1 to scan operating-system processes")
 	}
-	fmt.Printf("Process path: %s\n", processPath)
 
-	// (will fail if process is not running)
-	process := AttachProcess()
-	if process != nil {
-		fmt.Printf("Successfully attached to process with PID: %d\n", process.Pid)
+	processPath, err := os.Executable()
+	if err != nil {
+		t.Fatalf("os.Executable() error = %v", err)
+	}
 
-		isRunning := IsProcessRunning(process)
-		fmt.Printf("Process is running: %v\n", isRunning)
-
-		if isRunning {
-			fmt.Println("Process is currently running and can be monitored")
-		}
-	} else {
-		fmt.Println("Process is not currently running - would wait for restart in real scenario")
-
-		// when process is not found
-		fmt.Printf("Would wait for process at %s to restart...\n", processPath)
+	attached, err := AttachProcess(processPath)
+	if err != nil {
+		t.Fatalf("AttachProcess() error = %v", err)
+	}
+	if !IsProcessRunning(attached) {
+		t.Fatal("IsProcessRunning() = false, want true for the test process")
 	}
 }
 
-func TestWaitAndReattachProcess(t *testing.T) {
-	processPath := GetProcessPath()
-	fmt.Printf("Testing reattachment logic for process: %s\n", processPath)
+func TestReattachProcessRequiresPath(t *testing.T) {
+	if _, err := ReattachProcessByName(""); err == nil {
+		t.Fatal("ReattachProcessByName() error = nil, want missing path error")
+	}
+}
 
-	// This would normally wait for the process to start
-	// For testing purposes, we'll just verify the function exists and can be called
-	// In a real scenario, you'd run this when the target process is expected to restart
-
-	fmt.Println("WaitAndReattachProcess function is available and ready to use")
-	fmt.Println("This function will continuously poll for the process until it's found")
+func TestIsProcessRunningRejectsNil(t *testing.T) {
+	if IsProcessRunning(nil) {
+		t.Fatal("IsProcessRunning(nil) = true, want false")
+	}
 }

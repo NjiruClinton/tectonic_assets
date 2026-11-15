@@ -7,45 +7,34 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func TestPgdb(t *testing.T) {
-	// Set up environment variable for testing
-	os.Setenv("DB_CONNECTION_STRING", "your_test_connection_string")
+func TestPgdbRequiresConnectionString(t *testing.T) {
+	t.Setenv("DB_CONNECTION_STRING", "")
 
-	// Test database connection
-	db, err := Pgdb()
-	if err != nil {
-		t.Fatalf("Failed to connect to the database: %v", err)
-	}
-	defer db.Close()
-
-	// Check if the connection is valid
-	err = db.Ping()
-	if err != nil {
-		t.Fatalf("Failed to ping the database: %v", err)
+	if _, err := Pgdb(); err == nil {
+		t.Fatal("Pgdb() error = nil, want missing configuration error")
 	}
 }
 
-func TestExecuteQuery(t *testing.T) {
-	// Set up environment variable for testing
-	os.Setenv("DB_CONNECTION_STRING", "your_test_connection_string")
-
-	// Test database connection
-	db, err := Pgdb()
-	if err != nil {
-		t.Fatalf("Failed to connect to the database: %v", err)
+func TestExecuteQueryRejectsNilDatabase(t *testing.T) {
+	if _, err := ExecuteQuery(nil, "SELECT 1"); err == nil {
+		t.Fatal("ExecuteQuery() error = nil, want nil database error")
 	}
-	defer db.Close()
+}
 
-	// Test query execution
-	query := "CREATE TABLE IF NOT EXISTS test_table (id SERIAL PRIMARY KEY, name VARCHAR(50))"
-	_, err = ExecuteQuery(db, query)
-	if err != nil {
-		t.Fatalf("Failed to execute query: %v", err)
+func TestPgdbIntegration(t *testing.T) {
+	connectionString := os.Getenv("TEST_DB_CONNECTION_STRING")
+	if connectionString == "" {
+		t.Skip("set TEST_DB_CONNECTION_STRING to run the PostgreSQL integration test")
 	}
+	t.Setenv("DB_CONNECTION_STRING", connectionString)
 
-	// Clean up
-	_, err = ExecuteQuery(db, "DROP TABLE test_table")
+	database, err := Pgdb()
 	if err != nil {
-		t.Fatalf("Failed to drop test table: %v", err)
+		t.Fatalf("Pgdb() error = %v", err)
+	}
+	defer database.Close()
+
+	if err := database.Ping(); err != nil {
+		t.Fatalf("Ping() error = %v", err)
 	}
 }

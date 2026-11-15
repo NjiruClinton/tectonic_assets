@@ -2,18 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/NjiruClinton/tectonic_assets/api/routes"
-	"github.com/NjiruClinton/tectonic_assets/db"
-	"github.com/NjiruClinton/tectonic_assets/handlers"
-	"github.com/NjiruClinton/tectonic_assets/profiler"
-	"github.com/NjiruClinton/tectonic_assets/tests"
-	"github.com/NjiruClinton/tectonic_assets/timetool"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"io"
 	"net/http"
 	"text/template"
-	"time"
+
+	"github.com/NjiruClinton/tectonic_assets/api/controllers"
+	"github.com/NjiruClinton/tectonic_assets/config"
+	"github.com/NjiruClinton/tectonic_assets/db"
+	"github.com/NjiruClinton/tectonic_assets/handlers"
+	"github.com/NjiruClinton/tectonic_assets/profiler"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type Template struct {
@@ -30,22 +29,15 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 	return t.tmpl.ExecuteTemplate(w, name, data)
 }
 
-type Count struct {
-	Count int
-}
-
-func customRenderer() {
+func newServer() *echo.Echo {
 	e := echo.New()
-
-	count := Count{Count: 0}
 
 	e.Renderer = newTemplate()
 	e.Use(middleware.Logger())
 
-	e.Static("/", "views")
+	e.Static("/assets", "views")
 	e.GET("/", func(c echo.Context) error {
-		count.Count++
-		return c.Render(200, "index.html", count)
+		return c.Render(200, "index.html", nil)
 	})
 	e.GET("/cpu_usage", handlers.GetCPUUsage)
 	e.POST("/cpu_usage", handlers.GetCPUUsage)
@@ -53,50 +45,57 @@ func customRenderer() {
 	e.POST("/memory_usage", handlers.GetMemoryUsage)
 	e.GET("/cpu_processes", handlers.GetCPUProcesses)
 	e.GET("/memory_processes", handlers.GetMemoryProcesses)
+	e.POST("/api/collect", echo.WrapHandler(http.HandlerFunc(controllers.CollectAndSendCPUUsage)))
 
-	e.Logger.Fatal(e.Start(":8080"))
+	return e
 }
 
-func main() {
-	mux := routes.SetupRoutes()
-	http.Handle("/", mux)
-	timeTool := timetool.NewTime()
-	timeTool.Start()
+func startProfilers(cfg config.Config) {
+	if cfg.TargetProcessPath == "" {
+		fmt.Println("Profiling disabled: set TARGET_PROCESS_PATH to monitor a process")
+		return
+	}
 
 	dbConn, err := db.Pgdb()
 	if err != nil {
-		fmt.Println("Error connecting to the database:", err)
-		return
-	}
-	defer dbConn.Close()
-	pid := profiler.AttachProcess()
-	if pid == nil {
-		fmt.Println("Failed to attach to process")
+		fmt.Println("Profiling disabled: database unavailable:", err)
 		return
 	}
 
-	processPath := profiler.GetProcessPath()
-
-	//prof, err := profiler.NewProfiler("tectonic_assets", int(pid.Pid), processPath, dbConn, 5*time.Second)
-	//
-	//go prof.Start()
-
-	// Memory Profiler
-	memProf, err := profiler.NewMemoryProfiler("tectonic_assets", int(pid.Pid), processPath, dbConn, 5*time.Second)
+	attachedProcess, err := profiler.AttachProcess(cfg.TargetProcessPath)
 	if err != nil {
-		fmt.Println("Error creating memory profiler:", err)
+		_ = dbConn.Close()
+		fmt.Println("Profiling disabled:", err)
 		return
 	}
-	go memProf.Start()
 
-	customRenderer()
-
-	tests.TestCPU()
-	timeTool.Stop()
-	jsonData, err := timeTool.ToJSON()
+	cpuProfiler, err := profiler.NewProfiler(cfg.TargetName, int(attachedProcess.Pid), cfg.TargetProcessPath, dbConn, cfg.ProfileInterval)
 	if err != nil {
-		fmt.Println("Error formatting data:", err)
+		_ = dbConn.Close()
+		fmt.Println("Profiling disabled: create CPU profiler:", err)
 		return
 	}
-	fmt.Println("Profiling Data:", jsonData)
+
+	memoryProfiler, err := profiler.NewMemoryProfiler(cfg.TargetName, int(attachedProcess.Pid), cfg.TargetProcessPath, dbConn, cfg.ProfileInterval)
+	if err != nil {
+		_ = dbConn.Close()
+		fmt.Println("Profiling disabled: create memory profiler:", err)
+		return
+	}
+
+	go cpuProfiler.Start()
+	go memoryProfiler.Start()
+	fmt.Printf("Profiling %s every %s\n", cfg.TargetName, cfg.ProfileInterval)
+}
+
+func main() {
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Println("Invalid configuration:", err)
+		return
+	}
+
+	server := newServer()
+	go startProfilers(cfg)
+	server.Logger.Fatal(server.Start(cfg.ServerAddress))
 }

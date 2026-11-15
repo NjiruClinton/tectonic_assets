@@ -2,50 +2,65 @@ package profiler
 
 import (
 	"fmt"
-	"github.com/shirou/gopsutil/process"
-	_ "go.uber.org/zap/zapcore"
+	"path/filepath"
+	"strings"
 	"time"
+
+	"github.com/shirou/gopsutil/process"
 )
 
-func AttachProcess() *process.Process {
-	processPath := GetProcessPath()
+func AttachProcess(processPath string) (*process.Process, error) {
 	p, err := ReattachProcessByName(processPath)
 	if err != nil {
-		fmt.Println("Error attaching to process:", err)
-		return nil
+		return nil, fmt.Errorf("attach to process: %w", err)
 	}
 	fmt.Println("Successfully attached to process with PID:", p.Pid)
-	return p
-}
-
-func GetProcessPath() string {
-	return "/Users/admin/Desktop/stuff/clinton/toyl/tmp/main"
+	return p, nil
 }
 
 // logic for re attaching process after it has restarted
 // it will have a new pid each time it restarts
 func ReattachProcessByName(processPath string) (*process.Process, error) {
+	processPath = strings.TrimSpace(processPath)
+	if processPath == "" {
+		return nil, fmt.Errorf("process path is required")
+	}
+	wantedPath := canonicalPath(processPath)
+
 	// process is running at path
 	procs, err := process.Processes()
 	if err != nil {
-		return nil, fmt.Errorf("error retrieving processes: %v", err)
+		return nil, fmt.Errorf("retrieve processes: %w", err)
 	}
 
 	for _, p := range procs {
 		if p.Pid < 100 {
 			continue
 		}
-		println("Checking process PID:", p.Pid)
 		exe, err := p.Exe()
 		if err != nil {
 			continue
 		}
-		if exe == processPath {
+		if canonicalPath(exe) == wantedPath {
 			return p, nil
 		}
 	}
 
 	return nil, fmt.Errorf("process with path %s not found", processPath)
+}
+
+func canonicalPath(path string) string {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		absPath = path
+	}
+	absPath = filepath.Clean(absPath)
+
+	resolvedPath, err := filepath.EvalSymlinks(absPath)
+	if err == nil {
+		return filepath.Clean(resolvedPath)
+	}
+	return absPath
 }
 
 func IsProcessRunning(p *process.Process) bool {

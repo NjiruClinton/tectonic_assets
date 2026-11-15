@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:15
@@ -23,11 +21,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=clinton
-      - DB_PASSWORD=Clint1235
-      - DB_NAME=tectonic_assets
+      SERVER_ADDRESS: ":8080"
+      DB_CONNECTION_STRING: "postgres://clinton:Clint1235@postgres:5432/tectonic_assets?sslmode=disable"
+      PROFILE_INTERVAL: "5s"
     depends_on:
       - postgres
     networks:

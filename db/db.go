@@ -1,39 +1,39 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
-	"github.com/joho/godotenv"
-	"log"
 	"os"
+	"strings"
+	"time"
 
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
-var conn *sql.DB
-
-func goDotEnvVariable(key string) string {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Fatalf("Error loading .env file")
-	}
-	return os.Getenv(key)
-}
-
 func Pgdb() (*sql.DB, error) {
-	err := godotenv.Load(".env") // "/etc/secrets/.env"
-	if err != nil {
-		log.Fatalf("Error loading .env file")
+	// Loading .env is a development convenience. Production configuration is
+	// expected to come from the environment, so a missing file is not fatal.
+	_ = godotenv.Load(".env")
+
+	connectionStr := strings.TrimSpace(os.Getenv("DB_CONNECTION_STRING"))
+	if connectionStr == "" {
+		return nil, fmt.Errorf("DB_CONNECTION_STRING is not configured")
 	}
-	connectionStr := goDotEnvVariable("DB_CONNECTION_STRING")
+
 	conn, err := sql.Open("postgres", connectionStr)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("open postgres connection: %w", err)
 	}
-	err = conn.Ping()
-	if err != nil {
-		panic(err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := conn.PingContext(ctx); err != nil {
+		_ = conn.Close()
+		return nil, fmt.Errorf("ping postgres: %w", err)
 	}
+
 	fmt.Println("Database connected...")
 	return conn, nil
 }
